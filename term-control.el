@@ -1,4 +1,4 @@
-;;; toggle-term.el --- Term-control allows to easily handle terminals for your projects  -*- lexical-binding:t -*-
+;;; term-control.el --- Allows to easily handle terminals for your projects  -*- lexical-binding:t -*-
 ;;
 ;; Author: pablololo12
 ;; URL: https://github.com/Pablololo12/term-control.el
@@ -43,12 +43,13 @@
   :type 'integer
   :group 'term-control)
 
-(defcustom term-control-hsize 33
+(defcustom term-control-hsize 50
   "Percentage of the window that the toggle-term buffer occupies. Horizontally"
   :type 'integer
   :group 'term-control)
 
 ;; Structs and variables
+
 (cl-defstruct term-control-terms
   name last-used)
 
@@ -64,6 +65,7 @@
       (term-control-terms-name term))))
 
 (defun term-control-get-all-terms ()
+  "It gets all the term names open"
   (mapcar #'term-control-terms-name term-control-active-terms))
 
 (defun term-control-set-last-used (target-name value)
@@ -74,15 +76,19 @@
 
 (defun term-control-display-buffer (name &optional sidescreen)
   "Displays the buffer and moves focus to it."
-  (let ((size (/ term-control-hsize 100.0)))
+  (let* ((control-size (if (eq 'bottom (or sidescreen 'bottom))
+                           term-control-vsize
+                         term-control-hsize))
+         (size (/ control-size 100.0)))
     (let ((window
            (display-buffer-in-side-window
             (get-buffer name)
             `((side . ,(or sidescreen 'bottom))
               (window-height . ,size)
+              (window-width . ,size)
               (preserve-size . (t . nil))))))
       (set-window-dedicated-p window nil)
-      (select-window window)))) ; 🔥 switch focus here
+      (select-window window)))) ; switch focus here
 
 ;; User Interface
 
@@ -133,4 +139,4 @@
 
 (provide 'term-control)
 
-;;; toggle-term.el ends here.
+;;; term-control.el ends here.
