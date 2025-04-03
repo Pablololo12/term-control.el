@@ -39,12 +39,12 @@
   :group 'applications)
 
 (defcustom term-control-vsize 33
-  "Percentage of the window that the toggle-term buffer occupies. Vertically"
+  "Percentage of the window that the toggle-term buffer occupies.  Vertically."
   :type 'integer
   :group 'term-control)
 
 (defcustom term-control-hsize 50
-  "Percentage of the window that the toggle-term buffer occupies. Horizontally"
+  "Percentage of the window that the toggle-term buffer occupies.  Horizontally."
   :type 'integer
   :group 'term-control)
 
@@ -54,7 +54,7 @@
   name last-used)
 
 (defvar term-control-active-terms nil
-  "We hold a list of term-control-terms to know what to show")
+  "We hold a list of term-control-terms to know what to show.")
 
 ;; Helper functions
 
@@ -65,17 +65,21 @@
       (term-control-terms-name term))))
 
 (defun term-control-get-all-terms ()
-  "It gets all the term names open"
+  "It gets all the term names open."
   (mapcar #'term-control-terms-name term-control-active-terms))
 
 (defun term-control-set-last-used (target-name value)
-  "Sets the last-used slot to whatever we choose"
+  "Sets the last-used slot to whatever we choose.
+Argument TARGET-NAME Name to match to modify.
+Argument VALUE Value we want to give, either t or nil."
   (dolist (term term-control-active-terms)
     (when (string= (term-control-terms-name term) target-name)
       (setf (term-control-terms-last-used term) value))))
 
 (defun term-control-display-buffer (name &optional sidescreen)
-  "Displays the buffer and moves focus to it."
+  "Displays the buffer and moves focus to it.
+Argument NAME Name of the buffer we want to display.
+Optional argument SIDESCREEN Where in the screen we want to show the terminal."
   (let* ((control-size (if (eq 'bottom (or sidescreen 'bottom))
                            term-control-vsize
                          term-control-hsize))
@@ -93,12 +97,13 @@
 ;; User Interface
 
 (defun term-control-switch-to-term-ver ()
-    "Switch to or creates a terminal from `term-control-active-terms`"
+    "Switch to or creates a terminal from `term-control-active-terms`."
     (interactive)
     (term-control-switch-to-term 'left))
 
 (defun term-control-switch-to-term (&optional side)
-  "Switch to or create a terminal from `term-control-active-terms`."
+  "Switch to or create a terminal from `term-control-active-terms`.
+Optional argument SIDE Where in the screen we want to show the terminal."
   (interactive)
   (let* ((choices (term-control-get-all-terms))
          (selected (completing-read "Choose terminal: " choices nil nil)))
@@ -118,12 +123,13 @@
     (term-control-display-buffer selected (or side 'bottom))))
 
 (defun term-control-toggle-ver ()
-  "Toggle the last used terminal buffer occupying all the vertical space"
+  "Toggle the last used terminal buffer occupying all the vertical space."
   (interactive)
   (term-control-toggle 'left))
 
 (defun term-control-toggle (&optional side)
-  "Toggle the last used terminal buffer: show it if hidden, hide it if visible."
+  "Toggle the last used terminal buffer: show it if hidden, hide it if visible.
+Optional argument SIDE Where in the screen we watn to show the terminal."
   (interactive)
   (let* ((term-buffer (term-control-get-last-used))           ; last used terminal buffer (from the struct)
          (term-window (when term-buffer (get-buffer-window term-buffer))))
