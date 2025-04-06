@@ -1,4 +1,4 @@
-;;; term-control.el --- Allows to easily handle terminals for your projects  -*- lexical-binding:t -*-
+;;; term-control.el --- Allows to easily handle pop-up vterm windows in your emacs -*- lexical-binding:t -*-
 ;;
 ;; Author: pablololo12
 ;; URL: https://github.com/Pablololo12/term-control.el
@@ -25,11 +25,12 @@
 ;; Boston, MA 02111-1307, USA.
 ;;
 ;;; Commentary:
-;; Term-control allows to handle and open terminals for all your different projects
+;; Term-control allows to easily handle pop-up vterm windows in your emacs.
 ;;
 ;;; Code:
 
 (require 'cl-lib)
+(require 'vterm)
 
 ;; Configs
 
