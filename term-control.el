@@ -52,30 +52,43 @@
 ;; Structs and variables
 
 (cl-defstruct term-control-terms
-  name last-used)
+  name)
+
+(cl-defstruct term-control-tabs
+  name term-name)
 
 (defvar term-control-active-terms nil
   "We hold a list of term-control-terms to know what to show.")
 
+(defvar term-control-active-tabs nil
+  "We hold a list of each tab which terminal it has")
+
 ;; Helper functions
+(defun term-control-get-tab ()
+  "Returns the tab identifier, we have it here for the future in case getting tab name changes"
+  (cdr (assoc 'name (tab-bar--current-tab))))
 
 (defun term-control-get-last-used ()
   "Gets the last used term name, or nil if none found."
-  (let ((term (cl-find-if #'term-control-terms-last-used term-control-active-terms)))
+  (let ((term (cl-find (term-control-get-tab) term-control-active-tabs :key #'term-control-tabs-name :test #'string=)))
     (when term
-      (term-control-terms-name term))))
+      (term-control-tabs-term-name term))))
 
 (defun term-control-get-all-terms ()
   "It gets all the term names open."
   (mapcar #'term-control-terms-name term-control-active-terms))
 
-(defun term-control-set-last-used (target-name value)
-  "Sets the last-used slot to whatever we choose.
-Argument TARGET-NAME Name to match to modify.
-Argument VALUE Value we want to give, either t or nil."
-  (dolist (term term-control-active-terms)
-    (when (string= (term-control-terms-name term) target-name)
-      (setf (term-control-terms-last-used term) value))))
+(defun term-control-set-last-used (target-name)
+  "Sets the last-used term for the current tab to TARGET-NAME."
+  (let* ((tab-name (term-control-get-tab))
+         (tab (cl-find tab-name term-control-active-tabs
+                       :key #'term-control-tabs-name
+                       :test #'string=)))
+    (if tab
+        (setf (term-control-tabs-term-name tab) target-name)
+      (push (make-term-control-tabs :name tab-name
+                                    :term-name target-name)
+            term-control-active-tabs))))
 
 (defun term-control-display-buffer (name &optional sidescreen)
   "Displays the buffer and moves focus to it.
@@ -98,9 +111,9 @@ Optional argument SIDESCREEN Where in the screen we want to show the terminal."
 ;; User Interface
 
 (defun term-control-switch-to-term-ver ()
-    "Switch to or creates a terminal from `term-control-active-terms`."
-    (interactive)
-    (term-control-switch-to-term 'left))
+  "Switch to or creates a terminal from `term-control-active-terms`."
+  (interactive)
+  (term-control-switch-to-term 'left))
 
 (defun term-control-switch-to-term (&optional side)
   "Switch to or create a terminal from `term-control-active-terms`.
@@ -112,14 +125,27 @@ Optional argument SIDE Where in the screen we want to show the terminal."
     (unless (get-buffer selected)
       (let ((buf (get-buffer-create selected)))
         (with-current-buffer buf
-          (vterm-mode))
-        (push (make-term-control-terms :name (buffer-name buf) :last-used nil)
-              term-control-active-terms)))
+          (vterm-mode)
+          (add-hook 'kill-buffer-hook
+                    (lambda ()
+                      ;; Remove from term-control-active-terms
+                      (setq term-control-active-terms
+                            (cl-remove (buffer-name) term-control-active-terms
+                                       :key #'term-control-terms-name
+                                       :test #'string=))
+                      ;; Remove from term-control-active-tabs
+                      (setq term-control-active-tabs
+                            (cl-remove-if (lambda (tab)
+                                            (string= (term-control-tabs-term-name tab)
+                                                     (buffer-name)))
+                                          term-control-active-tabs)))
+                    nil t)) ; Local hook
+        (unless (cl-find selected term-control-active-terms
+                         :key #'term-control-terms-name :test #'string=)
+          (push (make-term-control-terms :name selected)
+                term-control-active-terms))))
     ;; Update last-used status
-    (term-control-set-last-used selected t)
-    (dolist (term term-control-active-terms)
-      (unless (string= (term-control-terms-name term) selected)
-        (setf (term-control-terms-last-used term) nil)))
+    (term-control-set-last-used selected)
     ;; Display the buffer in side window and switch to it
     (term-control-display-buffer selected (or side 'bottom))))
 
@@ -130,7 +156,7 @@ Optional argument SIDE Where in the screen we want to show the terminal."
 
 (defun term-control-toggle (&optional side)
   "Toggle the last used terminal buffer: show it if hidden, hide it if visible.
-Optional argument SIDE Where in the screen we watn to show the terminal."
+Optional argument SIDE Where in the screen we want to show the terminal."
   (interactive)
   (let* ((term-buffer (term-control-get-last-used))           ; last used terminal buffer (from the struct)
          (term-window (when term-buffer (get-buffer-window term-buffer))))
